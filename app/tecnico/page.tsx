@@ -3,6 +3,7 @@ import { useState } from 'react'
 import Navbar from '../../components/layout/Navbar'
 import Sidebar from '../../components/layout/Sidebar'
 import StatCard from '../../components/ui/StatCard'
+import OfferCarousel from '../../components/shared/OfferCarousel'
 import { CATEGORIES, MOCK_REQUESTS, BOOST_OPTIONS } from '../../lib/data'
 
 const SIDEBAR_ITEMS = [
@@ -70,6 +71,9 @@ export default function TecnicoPage() {
             <StatCard label="Perfil visto hoy" value="247" change="↑ boost 2x activo" />
             <StatCard label="Contactos hoy" value="18" change="↑ 34%" />
           </div>
+
+          {/* Ofertas de proveedores — carrusel filtrado por rubros del técnico */}
+          <OfferCarousel activeRubros={activeServices} />
 
           {/* Requests */}
           <div className="bg-white rounded-2xl overflow-hidden" style={{ border: '1px solid #E8E5DE' }}>
