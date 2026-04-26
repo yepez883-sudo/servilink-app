@@ -14,9 +14,9 @@ interface FeaturedTech {
   zone: string
   desde: string
   verified: boolean
-  boost: number // pases/día pagados — determina orden y frecuencia
+  boost: number
   badge?: string
-  phone?: string
+  phone: string
 }
 
 const FEATURED_TECHS: FeaturedTech[] = [
@@ -63,28 +63,26 @@ interface FeaturedCarouselProps {
 }
 
 export default function FeaturedCarousel({ userZone }: FeaturedCarouselProps) {
-  // Ordenar por boost descendente
-  const techs = [...FEATURED_TECHS]
-    .filter(t => !userZone || t.zone.toLowerCase().includes(userZone.toLowerCase()) || true)
-    .sort((a, b) => b.boost - a.boost)
-
+  const techs = [...FEATURED_TECHS].sort((a, b) => b.boost - a.boost)
   const [current, setCurrent] = useState(0)
-  const [paused, setPaused] = useState(false)
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const [mounted, setMounted] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    if (techs.length <= 1) return
-    const tech = techs[current]
-    const delay = Math.max(3000, tech.boost * 500)
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted || techs.length <= 1) return
+    const delay = Math.max(3000, techs[current].boost * 500)
     timerRef.current = setTimeout(() => {
-      if (!paused) setCurrent(c => (c + 1) % techs.length)
+      setCurrent(c => (c + 1) % techs.length)
     }, delay)
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [current, paused, techs.length])
+  }, [current, mounted, techs.length])
 
-  if (techs.length === 0) return null
+  if (!mounted) return null
   const tech = techs[current]
-
   const boostColor = tech.boost >= 10 ? '#3730A3' : tech.boost >= 5 ? '#F4A026' : '#2DD4BF'
 
   return (
@@ -96,86 +94,73 @@ export default function FeaturedCarousel({ userZone }: FeaturedCarouselProps) {
         <p className="text-xs" style={{ color: '#6B7280' }}>{current + 1} / {techs.length}</p>
       </div>
 
-      <div
-        className="rounded-2xl overflow-hidden cursor-pointer transition-all"
-        style={{ border: '2px solid #F4A026', background: '#FFFBF2' }}
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
-      >
-        {/* Barra superior dorada */}
-        <div className="h-1 w-full" style={{ background: boostColor }} />
+      <div className="rounded-2xl overflow-hidden" style={{ border: '2px solid #F4A026', background: '#FFFBF2' }}>
+        <div className="h-1 w-full transition-all" style={{ background: boostColor }} />
 
         <div className="flex items-center gap-4 p-4">
           {/* Avatar */}
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-xl flex-shrink-0 relative"
-            style={{ background: tech.avatarBg, color: tech.avatarColor }}>
+            style={{ background: tech.avatarBg, color: tech.avatarColor, fontFamily: 'Syne, sans-serif' }}>
             {tech.initials}
             {tech.verified && (
-              <span className="absolute -bottom-1 -right-1 text-xs bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center">✓</span>
+              <span className="absolute -bottom-1 -right-1 text-xs rounded-full w-5 h-5 flex items-center justify-center"
+                style={{ background: '#10B981', color: '#fff', fontSize: 10 }}>✓</span>
             )}
           </div>
 
           {/* Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-0.5">
-              <p className="font-bold text-sm" style={{ color: '#1A2B4A' }}>{tech.name}</p>
+              <p className="font-bold text-sm" style={{ color: '#1A2B4A', fontFamily: 'Syne, sans-serif' }}>{tech.name}</p>
               {tech.badge && (
                 <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-                  style={{ background: '#FEF3C7', color: '#92400E' }}>
-                  {tech.badge}
-                </span>
+                  style={{ background: '#FEF3C7', color: '#92400E' }}>{tech.badge}</span>
               )}
             </div>
             <p className="text-xs mb-1" style={{ color: '#6B7280' }}>{tech.type} · 📍 {tech.zone}</p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 mb-1">
               <span style={{ color: '#F4A026', fontSize: 12 }}>{'★'.repeat(Math.round(tech.rating))}</span>
               <span className="text-xs font-bold" style={{ color: '#1A2B4A' }}>{tech.rating}</span>
-              <span className="text-xs" style={{ color: '#6B7280' }}>({tech.reviews} reseñas)</span>
+              <span className="text-xs" style={{ color: '#6B7280' }}>({tech.reviews})</span>
             </div>
-            <div className="flex flex-wrap gap-1 mt-1.5">
+            <div className="flex flex-wrap gap-1">
               {tech.services.map(s => (
                 <span key={s} className="text-xs px-2 py-0.5 rounded-lg"
-                  style={{ background: '#EEF2FF', color: '#3730A3', fontWeight: 600 }}>
-                  {s}
-                </span>
+                  style={{ background: '#EEF2FF', color: '#3730A3', fontWeight: 600 }}>{s}</span>
               ))}
             </div>
           </div>
 
           {/* CTA */}
-          <div className="flex flex-col gap-2 flex-shrink-0">
+          <div className="flex flex-col gap-2 flex-shrink-0 items-end">
             <div className="text-right mb-1">
               <p className="text-xs" style={{ color: '#6B7280' }}>Desde</p>
-              <p className="font-bold text-base" style={{ color: '#1A2B4A' }}>{tech.desde}</p>
+              <p className="font-bold text-base" style={{ color: '#1A2B4A', fontFamily: 'Syne, sans-serif' }}>{tech.desde}</p>
             </div>
-            <a
-              href={`https://wa.me/54${tech.phone}?text=Hola ${tech.name}, te vi en ServiLink y quiero consultarte`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-bold px-4 py-2 rounded-xl text-center no-underline"
-              style={{ background: '#25D366', color: '#fff' }}
-            >
+            <a href={`https://wa.me/54${tech.phone}?text=Hola ${tech.name}, te vi en ServiLink`}
+              target="_blank" rel="noopener noreferrer"
+              className="text-xs font-bold px-4 py-2 rounded-xl text-center no-underline block"
+              style={{ background: '#25D366', color: '#fff' }}>
               📲 Contactar
             </a>
             <button
               className="text-xs font-medium px-4 py-1.5 rounded-xl"
-              style={{ background: '#F6F5F1', color: '#6B7280', border: '1px solid #E8E5DE' }}
-              onClick={() => setCurrent(c => (c + 1) % techs.length)}
-            >
+              style={{ background: '#F6F5F1', color: '#6B7280', border: '1px solid #E8E5DE', cursor: 'pointer' }}
+              onClick={() => setCurrent(c => (c + 1) % techs.length)}>
               Ver siguiente →
             </button>
           </div>
         </div>
 
-        {/* Dot indicators */}
+        {/* Dots */}
         <div className="flex justify-center gap-1.5 pb-3">
           {techs.map((_, i) => (
             <button key={i} onClick={() => setCurrent(i)}
-              className="rounded-full transition-all"
               style={{
                 width: i === current ? 16 : 6, height: 6,
                 background: i === current ? '#F4A026' : '#E8E5DE',
-                border: 'none', cursor: 'pointer', padding: 0,
+                border: 'none', cursor: 'pointer', padding: 0, borderRadius: 9999,
+                transition: 'all 0.2s',
               }} />
           ))}
         </div>
