@@ -3,6 +3,7 @@ import { useState } from 'react'
 import Navbar from '../../components/layout/Navbar'
 import Sidebar from '../../components/layout/Sidebar'
 import ProCard from '../../components/shared/ProCard'
+import AuthGate from '../../components/shared/AuthGate'
 import ConformidadModal from '../../components/shared/ConformidadModal'
 import RatingModal from '../../components/shared/RatingModal'
 import FeaturedCarousel from '../../components/shared/FeaturedCarousel'
@@ -58,6 +59,7 @@ export default function ClientePage() {
   }
 
   return (
+    <AuthGate requiredRole="cliente">
     <>
       <Navbar />
       <div className="flex gap-5 p-5 min-h-screen" style={{ background: '#F6F5F1' }}>
@@ -246,5 +248,6 @@ export default function ClientePage() {
           onClose={() => setRateModal(null)} />
       )}
     </>
+    </AuthGate>
   )
 }

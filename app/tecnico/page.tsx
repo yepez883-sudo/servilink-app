@@ -4,6 +4,7 @@ import Navbar from '../../components/layout/Navbar'
 import Sidebar from '../../components/layout/Sidebar'
 import StatCard from '../../components/ui/StatCard'
 import OfferCarousel from '../../components/shared/OfferCarousel'
+import AuthGate from '../../components/shared/AuthGate'
 import { CATEGORIES, MOCK_REQUESTS, BOOST_OPTIONS } from '../../lib/data'
 
 const SIDEBAR_ITEMS = [
@@ -58,6 +59,7 @@ export default function TecnicoPage() {
   }
 
   return (
+    <AuthGate requiredRole="tecnico">
     <>
       <Navbar />
       <div className="flex gap-5 p-5" style={{ background: '#F6F5F1', minHeight: 'calc(100vh - 56px)' }}>
@@ -260,5 +262,6 @@ export default function TecnicoPage() {
         </div>
       )}
     </>
+    </AuthGate>
   )
 }
