@@ -17,6 +17,8 @@ export default function AuthGate({ requiredRole, children }: AuthGateProps) {
   const { user, login, register, isLoading } = useAuth()
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState('')
 
   // Login form
   const [email, setEmail] = useState('')
@@ -29,28 +31,26 @@ export default function AuthGate({ requiredRole, children }: AuthGateProps) {
   const [regPhone, setRegPhone] = useState('')
   const [regCuit, setRegCuit] = useState('')
 
-  if (isLoading) return null
-
-  // Si ya está logueado con el rol correcto, mostrar contenido
-  if (user && user.role === requiredRole) {
-    return <>{children}</>
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#1A2B4A' }}>
+        <div className="text-white text-sm">Cargando...</div>
+      </div>
+    )
   }
 
-  // Si está logueado con otro rol, mostrar mensaje
+  if (user && user.role === requiredRole) return <>{children}</>
+
   if (user && user.role !== requiredRole) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#1A2B4A' }}>
         <div className="bg-white rounded-2xl p-8 w-full max-w-md text-center">
           <div className="text-5xl mb-4">⚠️</div>
-          <h2 className="font-bold text-xl mb-2" style={{ color: '#1A2B4A', fontFamily: 'Syne, sans-serif' }}>
-            Acceso restringido
-          </h2>
+          <h2 className="font-bold text-xl mb-2" style={{ color: '#1A2B4A', fontFamily: 'Syne, sans-serif' }}>Acceso restringido</h2>
           <p className="text-sm mb-6" style={{ color: '#6B7280' }}>
             Tu cuenta es de <strong>{user.role}</strong>. Esta sección es solo para <strong>{requiredRole}</strong>.
           </p>
-          <a href={`/${user.role}`} className="btn-primary no-underline inline-flex">
-            Ir a mi panel →
-          </a>
+          <a href={`/${user.role}`} className="btn-primary no-underline inline-flex">Ir a mi panel →</a>
         </div>
       </div>
     )
@@ -58,21 +58,29 @@ export default function AuthGate({ requiredRole, children }: AuthGateProps) {
 
   const roleInfo = ROLE_INFO[requiredRole!]
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-    const ok = login(email, password, requiredRole)
-    if (!ok) setError('Email o contraseña incorrectos. Probá con los datos de demo.')
+    setError(''); setLoading(true)
+    const result = await login(email, password, requiredRole)
+    setLoading(false)
+    if (!result.ok) setError(result.error || 'Error al iniciar sesión.')
   }
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
+    setError(''); setLoading(true)
     if (!regName || !regEmail || !regPassword) {
       setError('Completá todos los campos obligatorios.')
+      setLoading(false)
       return
     }
-    register({ name: regName, email: regEmail, password: regPassword, role: requiredRole, phone: regPhone, cuit: regCuit })
+    const result = await register({ name: regName, email: regEmail, password: regPassword, role: requiredRole, phone: regPhone, cuit: regCuit })
+    setLoading(false)
+    if (!result.ok) {
+      setError(result.error || 'Error al registrarse.')
+    } else {
+      setSuccess('¡Cuenta creada! Revisá tu email para confirmar tu registro.')
+    }
   }
 
   return (
@@ -94,17 +102,16 @@ export default function AuthGate({ requiredRole, children }: AuthGateProps) {
           </div>
         </div>
 
-        {/* Tab switcher */}
+        {/* Tabs */}
         <div className="flex" style={{ borderBottom: '1px solid #E8E5DE' }}>
           {(['login', 'register'] as const).map(m => (
-            <button key={m} onClick={() => { setMode(m); setError('') }}
+            <button key={m} onClick={() => { setMode(m); setError(''); setSuccess('') }}
               className="flex-1 py-3 text-sm font-semibold transition-all"
               style={{
                 background: mode === m ? '#fff' : '#F6F5F1',
                 color: mode === m ? '#1A2B4A' : '#6B7280',
                 border: 'none', cursor: 'pointer',
                 borderBottom: mode === m ? '2px solid #1A2B4A' : '2px solid transparent',
-                fontFamily: 'DM Sans, sans-serif',
               }}>
               {m === 'login' ? 'Iniciar sesión' : 'Registrarse gratis'}
             </button>
@@ -112,11 +119,11 @@ export default function AuthGate({ requiredRole, children }: AuthGateProps) {
         </div>
 
         <div className="px-8 py-6">
-          {/* Error */}
           {error && (
-            <div className="p-3 rounded-xl text-xs mb-4" style={{ background: '#FEE2E2', color: '#991B1B' }}>
-              {error}
-            </div>
+            <div className="p-3 rounded-xl text-xs mb-4" style={{ background: '#FEE2E2', color: '#991B1B' }}>{error}</div>
+          )}
+          {success && (
+            <div className="p-3 rounded-xl text-xs mb-4" style={{ background: '#D1FAE5', color: '#065F46' }}>{success}</div>
           )}
 
           {/* LOGIN */}
@@ -134,23 +141,16 @@ export default function AuthGate({ requiredRole, children }: AuthGateProps) {
                     value={password} onChange={e => setPassword(e.target.value)} required />
                 </div>
               </div>
-
-              <button type="submit" className="btn-primary w-full justify-center py-3 mb-4">
-                Ingresar →
+              <button type="submit" className="btn-primary w-full justify-center py-3" disabled={loading}>
+                {loading ? 'Ingresando...' : 'Ingresar →'}
               </button>
-
-              {/* Demo hint */}
-              <div className="p-3 rounded-xl text-xs" style={{ background: '#F6F5F1', color: '#6B7280' }}>
-                <p className="font-semibold mb-1">👤 Usuario de prueba:</p>
-                <p>{requiredRole}@demo.com / 123456</p>
-              </div>
             </form>
           )}
 
           {/* REGISTER */}
-          {mode === 'register' && (
+          {mode === 'register' && !success && (
             <form onSubmit={handleRegister}>
-              <div className="flex flex-col gap-3 mb-5">
+              <div className="flex flex-col gap-3 mb-4">
                 <div>
                   <label className="block text-sm font-medium mb-1" style={{ color: '#1A2B4A' }}>
                     {requiredRole === 'proveedor' ? 'Nombre / Razón social *' : 'Nombre completo *'}
@@ -164,9 +164,7 @@ export default function AuthGate({ requiredRole, children }: AuthGateProps) {
                     value={regEmail} onChange={e => setRegEmail(e.target.value)} required />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#1A2B4A' }}>
-                    Teléfono / WhatsApp
-                  </label>
+                  <label className="block text-sm font-medium mb-1" style={{ color: '#1A2B4A' }}>Teléfono / WhatsApp</label>
                   <div className="flex gap-2">
                     <span className="flex items-center px-3 rounded-xl text-sm"
                       style={{ background: '#F6F5F1', border: '1.5px solid #E8E5DE', color: '#6B7280', whiteSpace: 'nowrap' }}>
@@ -191,13 +189,11 @@ export default function AuthGate({ requiredRole, children }: AuthGateProps) {
                     value={regPassword} onChange={e => setRegPassword(e.target.value)} required />
                 </div>
               </div>
-
               <div className="p-3 rounded-xl text-xs mb-4" style={{ background: '#FEF3C7', color: '#92400E' }}>
-                Al registrarte aceptás que el acuerdo económico con {requiredRole === 'cliente' ? 'técnicos' : 'clientes'} es directo entre las partes. ServiLink no interviene en pagos ni contratos.
+                Al registrarte aceptás que el acuerdo económico es directo entre las partes. ServiLink no interviene en pagos ni contratos.
               </div>
-
-              <button type="submit" className="btn-primary w-full justify-center py-3">
-                Crear cuenta gratis →
+              <button type="submit" className="btn-primary w-full justify-center py-3" disabled={loading}>
+                {loading ? 'Creando cuenta...' : 'Crear cuenta gratis →'}
               </button>
             </form>
           )}
